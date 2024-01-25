@@ -22,8 +22,17 @@ export const fromIngredientstoRecipes = async (
       const recipe = await RecipiesModel.findOne()
         .where("ingredientsClean")
         .in(idArray);
-      // console.log(recipe);
-      return res.status(200).json(recipe);
+
+      if (recipe.photo) {
+        console.log("RADO FOTKE");
+        // console.log(recipe);
+        return res.status(200).json(recipe);
+      } else {
+        console.log("NERADO FOTO");
+        recipe.photo = await imageFromScraper(recipe.title);
+        recipe.save();
+        return res.status(200).json(recipe);
+      }
     } else res.status(402);
   } catch (error) {
     console.log(error);
@@ -31,28 +40,22 @@ export const fromIngredientstoRecipes = async (
   }
 };
 
-export const imageFromScraper = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const imageFromScraper = async (recipeName: string) => {
   try {
     // console.log("---------------NEW PHOTO---------------");
-    const recipeName = req.query.photo;
 
     if (typeof recipeName === "string") {
       const googlePhoto = await google.image(recipeName, { safe: false });
 
       const goodPhoto = googlePhoto.find((photo) => {
         return (
-          (photo.width >= 1400 && photo.height >= 1000) ||
-          (photo.height >= 1400 && photo.width >= 1000)
+          (photo.width >= 1000 && photo.height >= 700) ||
+          (photo.height >= 1000 && photo.width >= 700)
         );
       });
-      // console.log(googlePhoto);
-      return res.status(200).json(goodPhoto.url);
-    } else res.status(402);
+      return goodPhoto.url;
+    } else return null;
   } catch (error) {
     console.log(error);
-    res.sendStatus(400);
   }
 };
